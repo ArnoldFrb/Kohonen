@@ -2,7 +2,7 @@ import tkinter as tk
 import tkinter.ttk as ttk
 from tkinter import filedialog
 from tkinter import messagebox
-from Config import *
+from Neorona import *
 
 class Views:
 
@@ -13,7 +13,7 @@ class Views:
         self.wind.geometry("1100x600")
         self.wind.winfo_screenheight()
         self.wind.winfo_screenwidth()
-        self.config = Config()
+        self.neuro = Neorona()
 
         # FRAME PRINCIPAL
         frameMain = tk.Frame(master=self.wind, width=1100, height=600, background="#e3e3e3")
@@ -29,19 +29,25 @@ class Views:
          relief="flat", overrelief="flat", bg="#e3e3e3", borderwidth=2)
         btnData.place(relx=.01, rely=.4)
 
-        tk.Label(self.frameConfig, text="RATA:", bg="#fafafa").place(relx=.218, rely=.5)
+        tk.Label(self.frameConfig, text="RATA:", bg="#fafafa").place(relx=.2, rely=.5)
         self.entRataAprendizaje = tk.Entry(self.frameConfig, width=5)
         self.entRataAprendizaje.place(relx=.3, rely=.5)
         self.entRataAprendizaje.insert(0, 1)
 
-        tk.Label(self.frameConfig, text="COEVC:", bg="#fafafa").place(relx=.403, rely=.5)
+        tk.Label(self.frameConfig, text="COEVC:", bg="#fafafa").place(relx=.37, rely=.5)
         self.entCoeficiente = tk.Entry(self.frameConfig, width=5)
-        self.entCoeficiente.place(relx=.5, rely=.5)
+        self.entCoeficiente.place(relx=.47, rely=.5)
         self.entCoeficiente.insert(0, 0.2)
 
-        tk.Label(self.frameConfig, text="NEURO:", bg="#fafafa").place(relx=.615, rely=.5)
-        self.entNeuronas = tk.Entry(self.frameConfig, width=9)
-        self.entNeuronas.place(relx=.7, rely=.5)
+        tk.Label(self.frameConfig, text="NEURO:", bg="#fafafa").place(relx=.55, rely=.5)
+        self.entNeuronas = tk.Entry(self.frameConfig, width=5)
+        self.entNeuronas.place(relx=.65, rely=.5)
+        self.entNeuronas.insert(0, 0)
+
+        tk.Label(self.frameConfig, text="ITERA:", bg="#fafafa").place(relx=.75, rely=.5)
+        self.entIteraciones = tk.Entry(self.frameConfig, width=10)
+        self.entIteraciones.place(relx=.85, rely=.5)
+        self.entIteraciones.insert(0, 1000)
 
         # FRAME PARA VISUALIZAR ENTRADAS, SALIDAS Y PATRONES
         self.frameConfigInicial = tk.Frame(frameMain, width=450, height=60, background="#fafafa")
@@ -49,6 +55,10 @@ class Views:
 
         tk.Label(self.frameConfigInicial, text="CONFIG ENTRENAMIENTO", bg="#fafafa").place(relx=.34, rely=.01)
         tk.Label(self.frameConfigInicial, text="ENTRADAS", bg="#fafafa").place(relx=.1, rely=.3)
+        self.cobBoxCompetencia = ttk.Combobox(self.frameConfigInicial)
+        self.cobBoxCompetencia["values"] = ["BLANDA", "DURA"]
+        self.cobBoxCompetencia.place(relx=.35, rely=.5)
+        self.cobBoxCompetencia.insert(0, "BLANDA")
         tk.Label(self.frameConfigInicial, text="PATRONES", bg="#fafafa").place(relx=.8, rely=.3)
 
         # FRAME PARA VISUALIZAR LOS DATOS DE ENTRENAMIENTO
@@ -77,17 +87,18 @@ class Views:
     def Event_btnData(self):
         
         self.ruta = filedialog.askopenfilename()
-        self.config.NormalizarDatos(self.ruta)
+        self.neuro.NormalizarDatos(self.ruta)
         Matriz = pd.read_csv(self.ruta, delimiter=' ')
 
         treeView = ttk.Treeview(self.frameData)
         self.CrearGrid(treeView, self.frameData)
         self.LlenarTabla(treeView, Matriz)
 
-        tk.Label(self.frameConfigInicial, text=str(len(self.config.Entradas)), bg="#fafafa").place(relx=.15, rely=.6)
-        tk.Label(self.frameConfigInicial, text=str(len(self.config.Entradas[0])), bg="#fafafa").place(relx=.85, rely=.6)
+        tk.Label(self.frameConfigInicial, text=str(len(self.neuro.Entradas)), bg="#fafafa").place(relx=.15, rely=.6)
+        tk.Label(self.frameConfigInicial, text=str(len(self.neuro.Entradas[0])), bg="#fafafa").place(relx=.85, rely=.6)
 
-        self.entNeuronas.insert(0, len(self.config.Entradas[0]) + len(self.config.Entradas[0]))
+        self.entNeuronas.delete(0, tk.END)
+        self.entNeuronas.insert(0, len(self.neuro.Entradas) + len(self.neuro.Entradas))
 
         self.btnEntrenar['state'] = tk.NORMAL
 
@@ -96,6 +107,7 @@ class Views:
         rta = int(self.entRataAprendizaje.get())
         coe = float(self.entCoeficiente.get())
         neu = int(self.entNeuronas.get())
+        ite = int(self.entIteraciones.get())
 
         if(rta != 1):
             messagebox.showinfo(message="La Rata de Aprendizaje debe ser igual a 1", title="ERROR")
@@ -105,11 +117,11 @@ class Views:
             messagebox.showinfo(message="El rango del Coeficiente de Vencidad se encuenta entre [0, 1]", title="ERROR")
             return
 
-        if(neu < (len(self.config.Entradas[0]) + len(self.config.Entradas[0]))):
+        if(neu < (len(self.neuro.Entradas) + len(self.neuro.Entradas))):
             messagebox.showinfo(message="El minimo de Neuronas es el doble de entradas", title="ERROR")
             return
 
-        self.config.Entrenar(rta, coe, neu)
+        self.neuro.Entrenar(rta, coe, neu, ite, self.cobBoxCompetencia.get())
 
     def LlenarTabla(self, treeView, Matriz):
         treeView.delete(*treeView.get_children())
@@ -130,7 +142,7 @@ class Views:
         treeView.place(relheight=1, relwidth=1)
 
     def Event_btnLimpiar(self):
-        self.config.Limpiar()
+        self.neuro.Limpiar()
 
 if __name__ == '__main__':
     winw = tk.Tk()
